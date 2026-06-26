@@ -1,61 +1,56 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import axios from 'axios'
 
-/* ================= FILTER COMPONENT ================= */
-const Filter = ({ value, onChange }) => {
-  return (
+const Filter = ({ value, onChange }) => (
+  <div>
+    filter shown with: <input value={value} onChange={onChange} />
+  </div>
+)
+
+const PersonForm = ({
+  onSubmit,
+  newName,
+  handleNameChange,
+  newNumber,
+  handleNumberChange
+}) => (
+  <form onSubmit={onSubmit}>
     <div>
-      filter shown with:{" "}
-      <input value={value} onChange={onChange} />
+      name: <input value={newName} onChange={handleNameChange} />
     </div>
-  )
-}
-
-/* ================= PERSON FORM ================= */
-const PersonForm = ({ onSubmit, newName, handleNameChange, newNumber, handleNumberChange }) => {
-  return (
-    <form onSubmit={onSubmit}>
-      <div>
-        name: <input value={newName} onChange={handleNameChange} />
-      </div>
-
-      <div>
-        number: <input value={newNumber} onChange={handleNumberChange} />
-      </div>
-
-      <div>
-        <button type="submit">add</button>
-      </div>
-    </form>
-  )
-}
-
-/* ================= PERSON LIST ================= */
-const Persons = ({ persons }) => {
-  return (
     <div>
-      {persons.map(person => (
-        <p key={person.name}>
-          {person.name} {person.number}
-        </p>
-      ))}
+      number: <input value={newNumber} onChange={handleNumberChange} />
     </div>
-  )
-}
+    <div>
+      <button type="submit">add</button>
+    </div>
+  </form>
+)
 
-/* ================= ROOT APP ================= */
+const Persons = ({ persons }) => (
+  <div>
+    {persons.map(person => (
+      <p key={person.id}>
+        {person.name} {person.number}
+      </p>
+    ))}
+  </div>
+)
+
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: 'Arto Hellas', number: '040-123456' },
-    { name: 'Ada Lovelace', number: '39-44-5323523' },
-    { name: 'Dan Abramov', number: '12-43-234345' },
-    { name: 'Mary Poppendieck', number: '39-23-6423122' }
-  ])
-
+  const [persons, setPersons] = useState([])
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
 
-  /* ====== ADD PERSON ====== */
+  // 🚀 LOAD DATA FROM SERVER
+  useEffect(() => {
+    axios.get('http://localhost:3001/persons')
+      .then(response => {
+        setPersons(response.data)
+      })
+  }, [])
+
   const addPerson = (event) => {
     event.preventDefault()
 
@@ -76,7 +71,6 @@ const App = () => {
     setNewNumber('')
   }
 
-  /* ====== FILTER LOGIC ====== */
   const personsToShow = persons.filter(person =>
     person.name.toLowerCase().includes(filter.toLowerCase())
   )
@@ -85,7 +79,6 @@ const App = () => {
     <div>
       <h2>Phonebook</h2>
 
-      {/* FILTER */}
       <Filter
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
@@ -93,7 +86,6 @@ const App = () => {
 
       <h3>Add a new</h3>
 
-      {/* FORM */}
       <PersonForm
         onSubmit={addPerson}
         newName={newName}
@@ -104,7 +96,6 @@ const App = () => {
 
       <h3>Numbers</h3>
 
-      {/* LIST */}
       <Persons persons={personsToShow} />
     </div>
   )
