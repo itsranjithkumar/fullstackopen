@@ -1,102 +1,55 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 
-const Filter = ({ value, onChange }) => (
-  <div>
-    filter shown with: <input value={value} onChange={onChange} />
-  </div>
-)
-
-const PersonForm = ({
-  onSubmit,
-  newName,
-  handleNameChange,
-  newNumber,
-  handleNumberChange
-}) => (
-  <form onSubmit={onSubmit}>
-    <div>
-      name: <input value={newName} onChange={handleNameChange} />
-    </div>
-    <div>
-      number: <input value={newNumber} onChange={handleNumberChange} />
-    </div>
-    <div>
-      <button type="submit">add</button>
-    </div>
-  </form>
-)
-
-const Persons = ({ persons }) => (
-  <div>
-    {persons.map(person => (
-      <p key={person.id}>
-        {person.name} {person.number}
-      </p>
-    ))}
-  </div>
-)
+import CountryList from './components/CountryList'
+import CountryDetail from './components/CountryDetail'
+import countriesService from './services/countries'
 
 const App = () => {
-  const [persons, setPersons] = useState([])
-  const [newName, setNewName] = useState('')
-  const [newNumber, setNewNumber] = useState('')
+  const [countries, setCountries] = useState([])
   const [filter, setFilter] = useState('')
+  const [selectedCountry, setSelectedCountry] = useState(null)
 
-  // 🚀 LOAD DATA FROM SERVER
+  // LOAD COUNTRIES
   useEffect(() => {
-    axios.get('http://localhost:3001/persons')
-      .then(response => {
-        setPersons(response.data)
-      })
+    countriesService.getAll().then(response => {
+      setCountries(response.data)
+    })
   }, [])
 
-  const addPerson = (event) => {
-    event.preventDefault()
-
-    const exists = persons.some(p => p.name === newName)
-
-    if (exists) {
-      alert(`${newName} is already added to phonebook`)
-      return
-    }
-
-    const personObject = {
-      name: newName,
-      number: newNumber
-    }
-
-    setPersons(persons.concat(personObject))
-    setNewName('')
-    setNewNumber('')
+  const handleFilterChange = (e) => {
+    setFilter(e.target.value)
+    setSelectedCountry(null)
   }
 
-  const personsToShow = persons.filter(person =>
-    person.name.toLowerCase().includes(filter.toLowerCase())
+  const countriesToShow = countries.filter(country =>
+    country.name.common.toLowerCase().includes(filter.toLowerCase())
   )
 
   return (
     <div>
-      <h2>Phonebook</h2>
+      <h2>Country Information</h2>
 
-      <Filter
-        value={filter}
-        onChange={(e) => setFilter(e.target.value)}
+      <div>
+        find countries:{" "}
+        <input value={filter} onChange={handleFilterChange} />
+      </div>
+
+      {/* LIST OR MESSAGE */}
+      <CountryList
+        countries={countriesToShow}
+        onShow={setSelectedCountry}
       />
 
-      <h3>Add a new</h3>
+      {/* DETAIL VIEW */}
+      {selectedCountry && (
+        <CountryDetail country={selectedCountry} />
+      )}
 
-      <PersonForm
-        onSubmit={addPerson}
-        newName={newName}
-        handleNameChange={(e) => setNewName(e.target.value)}
-        newNumber={newNumber}
-        handleNumberChange={(e) => setNewNumber(e.target.value)}
-      />
-
-      <h3>Numbers</h3>
-
-      <Persons persons={personsToShow} />
+      {/* AUTO SHOW SINGLE COUNTRY */}
+      {countriesToShow.length === 1 && (
+        <CountryDetail country={countriesToShow[0]} />
+      )}
     </div>
   )
 }
