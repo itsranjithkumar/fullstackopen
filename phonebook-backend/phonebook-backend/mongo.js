@@ -1,13 +1,7 @@
 const mongoose = require('mongoose')
 
-// ---------------- COMMAND LINE ARGS ----------------
-const password = process.argv[2]
-
-const name = process.argv[3]
-const number = process.argv[4]
-
-// ---------------- DB URL ----------------
-const url = `mongodb+srv://fullstack:${password}@cluster0.mongodb.net/phonebookApp?retryWrites=true&w=majority`
+// ---------------- LOCAL MONGODB ----------------
+const url = 'mongodb://127.0.0.1:27017/phonebookApp'
 
 mongoose.set('strictQuery', false)
 mongoose.connect(url)
@@ -21,20 +15,25 @@ const personSchema = new mongoose.Schema({
 const Person = mongoose.model('Person', personSchema)
 
 // ---------------- LOGIC ----------------
-if (process.argv.length === 3) {
+const argsLength = process.argv.length
+
+if (argsLength === 2) {
   // LIST ALL
   Person.find({}).then(result => {
     console.log('phonebook:')
-    result.forEach(person => {
-      console.log(person.name, person.number)
+    result.forEach(p => {
+      console.log(p.name, p.number)
     })
     mongoose.connection.close()
   })
+
 } else {
-  // ADD NEW PERSON
+  const name = process.argv[2]
+  const number = process.argv[3]
+
   const person = new Person({
-    name: name,
-    number: number
+    name,
+    number
   })
 
   person.save().then(() => {

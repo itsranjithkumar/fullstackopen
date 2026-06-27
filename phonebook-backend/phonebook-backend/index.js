@@ -10,15 +10,15 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
-morgan.token('body', (req) => JSON.stringify(req.body))
+// safer morgan token
+morgan.token('body', (req) => JSON.stringify(req.body || {}))
 
 app.use(
   morgan(':method :url :status :res[content-length] - :response-time ms :body')
 )
 
 // ---------------- MONGODB ----------------
-const url =
-  'mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@cluster0.mongodb.net/phonebook?retryWrites=true&w=majority'
+const url = 'mongodb://127.0.0.1:27017/phonebookApp'
 
 mongoose.set('strictQuery', false)
 
@@ -63,15 +63,9 @@ app.get('/api/persons/:id', (req, res, next) => {
     .catch(error => next(error))
 })
 
-// ADD person
+// CREATE person
 app.post('/api/persons', (req, res, next) => {
   const body = req.body
-
-  if (!body.name || !body.number) {
-    return res.status(400).json({
-      error: 'name or number missing'
-    })
-  }
 
   const person = new Person({
     name: body.name,
@@ -90,18 +84,15 @@ app.post('/api/persons', (req, res, next) => {
 app.put('/api/persons/:id', (req, res, next) => {
   const { name, number } = req.body
 
-  const person = {
-    name,
-    number
-  }
+  const updatedPerson = { name, number }
 
-  Person.findByIdAndUpdate(req.params.id, person, {
+  Person.findByIdAndUpdate(req.params.id, updatedPerson, {
     new: true,
     runValidators: true,
     context: 'query'
   })
-    .then(updatedPerson => {
-      res.json(updatedPerson)
+    .then(result => {
+      res.json(result)
     })
     .catch(error => next(error))
 })
@@ -115,20 +106,23 @@ app.delete('/api/persons/:id', (req, res, next) => {
     .catch(error => next(error))
 })
 
+// ---------------- UNKNOWN ENDPOINT ----------------
+const unknownEndpoint = (req, res) => {
+  res.status(404).send({ error: 'unknown endpoint' })
+}
+
+app.use(unknownEndpoint)
+
 // ---------------- ERROR HANDLER ----------------
 const errorHandler = (error, req, res, next) => {
   console.error(error.message)
 
   if (error.name === 'CastError') {
-    return res.status(400).json({
-      error: 'malformatted id'
-    })
+    return res.status(400).send({ error: 'malformatted id' })
   }
 
   if (error.name === 'ValidationError') {
-    return res.status(400).json({
-      error: error.message
-    })
+    return res.status(400).json({ error: error.message })
   }
 
   next(error)
