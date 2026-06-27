@@ -1,7 +1,8 @@
 const express = require('express')
 const cors = require('cors')
+const mongoose = require('mongoose')
 const morgan = require('morgan')
-const path = require('path')
+const Person = require('./models/person')
 
 const app = express()
 
@@ -9,56 +10,61 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
-// Morgan logging (3.7–3.8)
-morgan.token('post-data', (req) => JSON.stringify(req.body))
+morgan.token('body', (req) => JSON.stringify(req.body))
 
-const customFormat = ':method :url :status :response-time ms :post-data'
-app.use(morgan(customFormat))
+app.use(
+  morgan(':method :url :status :res[content-length] - :response-time ms :body')
+)
 
-// ---------------- DATA ----------------
-let persons = [
-  { id: '1', name: 'Arto Hellas', number: '040-123456' },
-  { id: '2', name: 'Ada Lovelace', number: '39-44-5323523' },
-  { id: '3', name: 'Dan Abramov', number: '12-43-234345' },
-  { id: '4', name: 'Mary Poppendieck', number: '39-23-6423122' }
-]
+// ---------------- MONGODB ----------------
+const url =
+  'mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@cluster0.mongodb.net/phonebook?retryWrites=true&w=majority'
+
+mongoose.set('strictQuery', false)
+
+mongoose
+  .connect(url)
+  .then(() => {
+    console.log('Connected to MongoDB')
+  })
+  .catch(error => {
+    console.log('MongoDB connection error:', error.message)
+  })
 
 // ---------------- ROUTES ----------------
 
 // GET all persons
 app.get('/api/persons', (req, res) => {
-  res.json(persons)
+  Person.find({}).then(persons => {
+    res.json(persons)
+  })
 })
 
-// INFO page
+// INFO
 app.get('/info', (req, res) => {
-  const time = new Date()
-
-  res.send(`
-    <p>Phonebook has info for ${persons.length} people</p>
-    <p>${time}</p>
-  `)
+  Person.find({}).then(persons => {
+    res.send(`
+      <p>Phonebook has info for ${persons.length} people</p>
+      <p>${new Date()}</p>
+    `)
+  })
 })
 
 // GET single person
-app.get('/api/persons/:id', (req, res) => {
-  const person = persons.find(p => p.id === req.params.id)
-
-  if (!person) {
-    return res.status(404).end()
-  }
-
-  res.json(person)
+app.get('/api/persons/:id', (req, res, next) => {
+  Person.findById(req.params.id)
+    .then(person => {
+      if (person) {
+        res.json(person)
+      } else {
+        res.status(404).end()
+      }
+    })
+    .catch(error => next(error))
 })
 
-// DELETE person
-app.delete('/api/persons/:id', (req, res) => {
-  persons = persons.filter(p => p.id !== req.params.id)
-  res.status(204).end()
-})
-
-// POST person
-app.post('/api/persons', (req, res) => {
+// ADD person
+app.post('/api/persons', (req, res, next) => {
   const body = req.body
 
   if (!body.name || !body.number) {
@@ -67,36 +73,70 @@ app.post('/api/persons', (req, res) => {
     })
   }
 
-  const exists = persons.find(p => p.name === body.name)
+  const person = new Person({
+    name: body.name,
+    number: body.number
+  })
 
-  if (exists) {
+  person
+    .save()
+    .then(savedPerson => {
+      res.json(savedPerson)
+    })
+    .catch(error => next(error))
+})
+
+// UPDATE person
+app.put('/api/persons/:id', (req, res, next) => {
+  const { name, number } = req.body
+
+  const person = {
+    name,
+    number
+  }
+
+  Person.findByIdAndUpdate(req.params.id, person, {
+    new: true,
+    runValidators: true,
+    context: 'query'
+  })
+    .then(updatedPerson => {
+      res.json(updatedPerson)
+    })
+    .catch(error => next(error))
+})
+
+// DELETE person
+app.delete('/api/persons/:id', (req, res, next) => {
+  Person.findByIdAndDelete(req.params.id)
+    .then(() => {
+      res.status(204).end()
+    })
+    .catch(error => next(error))
+})
+
+// ---------------- ERROR HANDLER ----------------
+const errorHandler = (error, req, res, next) => {
+  console.error(error.message)
+
+  if (error.name === 'CastError') {
     return res.status(400).json({
-      error: 'name must be unique'
+      error: 'malformatted id'
     })
   }
 
-  const newPerson = {
-    id: String(Math.floor(Math.random() * 1000000)),
-    name: body.name,
-    number: body.number
+  if (error.name === 'ValidationError') {
+    return res.status(400).json({
+      error: error.message
+    })
   }
 
-  persons = persons.concat(newPerson)
+  next(error)
+}
 
-  res.json(newPerson)
-})
+app.use(errorHandler)
 
-// ---------------- STATIC FRONTEND (3.11 FIX) ----------------
-
-// serve React build
-app.use(express.static('dist'))
-
-// SAFE fallback (NO wildcard route)
-app.use((req, res) => {
-  res.sendFile(path.resolve(__dirname, 'dist', 'index.html'))
-})
-
-// ---------------- START SERVER ----------------
+// ---------------- SERVER ----------------
 const PORT = process.env.PORT || 3001
 
 app.listen(PORT, () => {
