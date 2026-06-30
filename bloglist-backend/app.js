@@ -34,5 +34,30 @@ app.post('/api/blogs', async (request, response) => {
     })
   }
 })
+app.delete('/api/blogs/:id', async (request, response) => {
+  try {
+    await Blog.findByIdAndDelete(request.params.id)
+    response.status(204).end()
+  } catch (error) {
+    response.status(400).json({ error: error.message })
+  }
+})
+
+app.put('/api/blogs/:id', async (request, response) => {
+  try {
+    const updatedBlog = await Blog.findByIdAndUpdate(
+      request.params.id,
+      request.body,
+      {
+        new: true,
+        runValidators: true
+      }
+    )
+
+    response.json(updatedBlog)
+  } catch (error) {
+    response.status(400).json({ error: error.message })
+  }
+})
 
 module.exports = app
