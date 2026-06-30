@@ -6,7 +6,6 @@ test('dummy returns one', () => {
   const blogs = []
 
   const result = listHelper.dummy(blogs)
-
   assert.strictEqual(result, 1)
 })
 
@@ -40,17 +39,48 @@ describe('total likes', () => {
   ]
 
   test('of empty list is zero', () => {
-    const result = listHelper.totalLikes(emptyList)
-    assert.strictEqual(result, 0)
+    assert.strictEqual(listHelper.totalLikes(emptyList), 0)
   })
 
   test('when list has one blog equals its likes', () => {
-    const result = listHelper.totalLikes(listWithOneBlog)
-    assert.strictEqual(result, 5)
+    assert.strictEqual(listHelper.totalLikes(listWithOneBlog), 5)
   })
 
   test('of bigger list equals sum of likes', () => {
-    const result = listHelper.totalLikes(listWithManyBlogs)
-    assert.strictEqual(result, 30)
+    assert.strictEqual(listHelper.totalLikes(listWithManyBlogs), 30)
+  })
+})
+
+describe('favorite blog', () => {
+  const blogs = [
+    {
+      title: 'Blog A',
+      author: 'Author A',
+      url: 'http://a.com',
+      likes: 5
+    },
+    {
+      title: 'Blog B',
+      author: 'Author B',
+      url: 'http://b.com',
+      likes: 20
+    },
+    {
+      title: 'Blog C',
+      author: 'Author C',
+      url: 'http://c.com',
+      likes: 10
+    }
+  ]
+
+  test('returns blog with most likes', () => {
+    const result = listHelper.favoriteBlog(blogs)
+
+    assert.deepStrictEqual(result, {
+      title: 'Blog B',
+      author: 'Author B',
+      url: 'http://b.com',
+      likes: 20
+    })
   })
 })
