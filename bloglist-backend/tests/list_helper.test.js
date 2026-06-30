@@ -6,6 +6,7 @@ test('dummy returns one', () => {
   const blogs = []
 
   const result = listHelper.dummy(blogs)
+
   assert.strictEqual(result, 1)
 })
 
@@ -81,6 +82,46 @@ describe('favorite blog', () => {
       author: 'Author B',
       url: 'http://b.com',
       likes: 20
+    })
+  })
+})
+
+describe('most blogs', () => {
+  const blogs = [
+    { title: 'A', author: 'Robert C. Martin', likes: 7 },
+    { title: 'B', author: 'Robert C. Martin', likes: 5 },
+    { title: 'C', author: 'Robert C. Martin', likes: 3 },
+    { title: 'D', author: 'Martin Fowler', likes: 8 },
+    { title: 'E', author: 'Martin Fowler', likes: 4 },
+    { title: 'F', author: 'Edsger W. Dijkstra', likes: 10 }
+  ]
+
+  test('returns author with most blogs', () => {
+    const result = listHelper.mostBlogs(blogs)
+
+    assert.deepStrictEqual(result, {
+      author: 'Robert C. Martin',
+      blogs: 3
+    })
+  })
+})
+
+describe('most likes', () => {
+  const blogs = [
+    { title: 'A', author: 'Robert C. Martin', likes: 7 },
+    { title: 'B', author: 'Robert C. Martin', likes: 5 },
+    { title: 'C', author: 'Robert C. Martin', likes: 3 },
+    { title: 'D', author: 'Martin Fowler', likes: 8 },
+    { title: 'E', author: 'Martin Fowler', likes: 4 },
+    { title: 'F', author: 'Edsger W. Dijkstra', likes: 10 }
+  ]
+
+  test('returns author with most likes', () => {
+    const result = listHelper.mostLikes(blogs)
+
+    assert.deepStrictEqual(result, {
+      author: 'Robert C. Martin',
+      likes: 15
     })
   })
 })
